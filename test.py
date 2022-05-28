@@ -3,7 +3,8 @@ import cv2
 import time
 from time import strftime, gmtime
 
-from cluster import *
+from clusters.helper import *
+from utils.visualize import *
 
 TEST_VIDEO = '/vsa/face-clustering/videos/test.mp4'
 OUT_VIDEO = '/vsa/face-clustering/results/output.avi'
@@ -14,18 +15,6 @@ def get_elapsed_time(start_time,end_time=None):
         end_time = time.time()
     
     return strftime('%M:%S',gmtime(end_time-start_time))
-
-def draw_bounding_box(frame, bbox, label=None,color=None):
-    top,right,bottom,left = bbox
-
-    if color is None: # default color
-        color = (0,0,255)
-    # import pdb;pdb.set_trace()
-    cv2.rectangle(frame,(left,top),(right,bottom),color,2)
-    if label is not None:
-        cv2.rectangle(frame, (left, bottom - 25), (right, bottom), (0, 0, 255), cv2.FILLED)
-        font = cv2.FONT_HERSHEY_DUPLEX
-        cv2.putText(frame, label, (left + 6, bottom - 6), font, 0.5, (255, 255, 255), 1)
 
     
 def test_detection(input_vid,output_vid,max_frames=None):
@@ -69,7 +58,7 @@ def test_embedding(input_vid,output_vid,max_frames=None):
     if max_frames is None:
         max_frames = int(vid.get(cv2.CAP_PROP_FRAME_COUNT))
     frame_size = (int(vid.get(3)),int(vid.get(4)))
-    out = cv2.VideoWriter(OUT_VIDEO,cv2.VideoWriter_fourcc(*'XVID'),29.97,frame_size)
+    out = cv2.VideoWriter(output_vid,cv2.VideoWriter_fourcc(*'XVID'),29.97,frame_size)
 
     frame_count = 0
     start_time = time.time()
@@ -84,16 +73,12 @@ def test_embedding(input_vid,output_vid,max_frames=None):
         face_locations = face_recognition.face_locations(_frame)
         
         if len(face_locations) > 1:
-            import pdb;pdb.set_trace()
             face_instances = extract_face_instances(frame,frame_count,face_locations)
             cluster_library.process_faces(face_instances)
-
-        # for bbox in face_locations:
-        #     cluster_library.process_faces
-        #     # Draw bounding box - (top,right,bottom,left) ordering
-        #     draw_bounding_box(frame,bbox)
-        
-        # out.write(frame)
+            cluster_library.visualize(fname='library.png')
+            # import pdb;pdb.set_trace()
+        cluster_library.visualize_frame(frame,frame_count)
+        out.write(frame)
         
         if frame_count >= max_frames:
             break
@@ -105,4 +90,4 @@ def test_embedding(input_vid,output_vid,max_frames=None):
 
 
 if __name__=="__main__":
-    test_embedding(TEST_VIDEO,'embedding.avi',200)
+    test_embedding(TEST_VIDEO,'embedding.avi',500)
